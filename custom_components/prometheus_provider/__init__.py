@@ -12,10 +12,6 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers import config_validation as cv
 from homeassistant.const import (
     CONF_NAME,
-    CONF_DEVICE_ID,
-    CONF_DEVICE_NAME,
-    CONF_DEVICE_MANUFACTURER,
-    CONF_DEVICE_MODEL,
 )
 
 from .const import (
@@ -31,6 +27,10 @@ from .const import (
     CONF_INCLUDED_METRICS,
     CONF_EXCLUDED_METRICS,
     CONF_METRICS_FILTER,
+    CONF_DEVICE_ID,
+    CONF_DEVICE_NAME,
+    CONF_DEVICE_MANUFACTURER,
+    CONF_DEVICE_MODEL,
     DEFAULT_SCRAPE_INTERVAL,
     DEFAULT_MANUFACTURER,
     DATA_COORDINATORS,
