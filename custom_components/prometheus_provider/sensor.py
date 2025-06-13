@@ -24,6 +24,7 @@ from .const import (
     CONF_DEVICE_MODEL,
     DEFAULT_SCRAPE_INTERVAL,
     DEFAULT_MANUFACTURER,
+    DATA_COORDINATORS, # Added import
 )
 from .coordinator import PrometheusDataUpdateCoordinator
 
@@ -37,54 +38,45 @@ async def async_setup_platform(
     discovery_info: Optional[DiscoveryInfoType] = None,
 ) -> None:
     """Set up the Prometheus Provider sensor platform from YAML."""
-    _LOGGER.debug("Setting up Prometheus Provider sensor platform.")
+    _LOGGER.debug("Setting up Prometheus Provider sensor platform for YAML.")
 
-    # Integration-specific config is expected to be under DOMAIN key in hass.data
-    # This was set up in __init__.py async_setup
-    integration_config = hass.data.get(DOMAIN, {}).get("yaml_config")
-
-    if not integration_config:
-        _LOGGER.error("Prometheus Provider integration config not found in hass.data.")
+    if not (discovery_info and discovery_info.get("yaml")):
+        _LOGGER.debug("Not a YAML setup call (no discovery_info or 'yaml' key missing), skipping sensor platform setup.")
         return
 
-    prometheus_url = integration_config.get(CONF_PROMETHEUS_URL)
-    global_scrape_interval = integration_config.get(CONF_SCRAPE_INTERVAL, DEFAULT_SCRAPE_INTERVAL)
-    targets_config = integration_config.get(CONF_TARGETS, [])
-
-    if not prometheus_url:
-        _LOGGER.error("Prometheus URL not defined for sensor platform setup.")
-        return
-
-    if not targets_config:
-        _LOGGER.warning("No targets defined for Prometheus Provider sensor platform.")
+    coordinators = hass.data.get(DOMAIN, {}).get(DATA_COORDINATORS)
+    if not coordinators:
+        _LOGGER.warning(
+            "No Prometheus coordinators found in hass.data[DOMAIN][DATA_COORDINATORS]. "
+            "Ensure the integration is correctly configured in YAML and __init__.py ran successfully."
+        )
         return
 
     sensors_to_add = []
-
-    for target_conf in targets_config:
-        target_name = target_conf.get(CONF_TARGET_NAME, target_conf.get(CONF_DEVICE_NAME, "Prometheus Target"))
-        scrape_interval = target_conf.get(CONF_SCRAPE_INTERVAL, global_scrape_interval)
-
-        coordinator = PrometheusDataUpdateCoordinator(
-            hass,
-            name=f"{DOMAIN} {target_name}",
-            prometheus_url=prometheus_url,
-            scrape_interval=scrape_interval,
-            target_config=target_conf,
-        )
+    for coordinator_key, coordinator in coordinators.items():
+        _LOGGER.debug(f"Processing coordinator: {coordinator.name} (key: {coordinator_key})")
 
         # Perform initial refresh to populate coordinator.data
-        # This is crucial for discovering sensors at startup.
-        await coordinator.async_config_entry_first_refresh()
+        # This is crucial for discovering sensors at startup for YAML config,
+        # as __init__.py defers this to the platform.
+        try:
+            await coordinator.async_config_entry_first_refresh()
+        except Exception as e:  # Catch potential UpdateFailed or other errors during refresh
+            _LOGGER.error(f"Initial data fetch failed for coordinator {coordinator.name}: {e}")
+            continue  # Skip this coordinator if refresh fails
 
         if not coordinator.data:
             _LOGGER.warning(
-                "Initial data fetch failed for target %s. No sensors will be created.",
-                target_name,
+                "Initial data fetch yielded no data for coordinator %s. "
+                "No sensors will be created for this target.",
+                coordinator.name,
             )
             continue
         
-        _LOGGER.debug("Coordinator data for target %s: %s", target_name, coordinator.data)
+        _LOGGER.debug("Coordinator data for %s: %s", coordinator.name, coordinator.data)
+        
+        # Get target_config from the coordinator instance, where it was stored by __init__.py
+        target_config = coordinator.target_config
 
         # Create sensors based on the initial data fetched by the coordinator
         for metric_key, metric_data in coordinator.data.items():
@@ -92,15 +84,15 @@ async def async_setup_platform(
                 PrometheusSensor(
                     coordinator=coordinator,
                     metric_key=metric_key,
-                    target_config=target_conf,
+                    target_config=target_config, # Use the target_config from the coordinator
                 )
             )
 
     if sensors_to_add:
-        _LOGGER.info("Adding %s Prometheus sensors.", len(sensors_to_add))
-        async_add_entities(sensors_to_add, True)
+        _LOGGER.info("Adding %s Prometheus sensors from YAML configuration.", len(sensors_to_add))
+        async_add_entities(sensors_to_add, True) # True for update_before_add
     else:
-        _LOGGER.info("No Prometheus sensors to add.")
+        _LOGGER.info("No Prometheus sensors to add from YAML configuration. Check coordinator data and target setups.")
 
 
 class PrometheusSensor(CoordinatorEntity[PrometheusDataUpdateCoordinator], SensorEntity):
