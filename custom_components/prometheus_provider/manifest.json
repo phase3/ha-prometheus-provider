@@ -1,0 +1,11 @@
+{
+  "domain": "prometheus_provider",
+  "name": "Prometheus Provider",
+  "documentation": "https://lab.hendelberg.com/pub/ha-prometheus-provider",
+  "issue_tracker": "https://lab.hendelberg.com/pub/ha-prometheus-provider/issues",
+  "codeowners": ["@cgh"],
+  "requirements": ["voluptuous", "async_timeout"],
+  "iot_class": "local_polling",
+  "version": "0.1.0",
+  "config_flow": false
+}
