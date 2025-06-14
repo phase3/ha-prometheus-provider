@@ -108,9 +108,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     # Forward setup to sensor platform.
     # The sensor platform will retrieve coordinators from hass.data.
     if targets: # Only load platform if there are targets
-        hass.async_create_task(
-            hass.config_entries.async_setup_platforms(None, PLATFORMS) # Pass None as entry for YAML setup
-        )
         # For YAML, we might need a way for sensor platform to know it's YAML setup.
         # Storing a flag or using a special key in hass.data might be one way.
         # Or sensor platform checks if entry is None.
@@ -120,7 +117,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         # A more common pattern for YAML is hass.helpers.discovery.load_platform.
         # However, with coordinators, it's better if platforms can access them directly.
 
-        # Let's use discovery.async_load_platform as it's more suited for YAML
+        # Use discovery.async_load_platform as it's more suited for YAML
         # and sensor.py can then iterate hass.data[DOMAIN][DATA_COORDINATORS]
         for platform in PLATFORMS:
             hass.async_create_task(
