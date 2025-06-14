@@ -13,7 +13,7 @@ from .const import (
     DOMAIN,
     CONF_PROMETHEUS_URL,
     CONF_JOB_NAME,
-    CONF_INSTANCE_LABEL,
+    # CONF_INSTANCE_LABEL, # Removed
     CONF_INSTANCE_VALUE,
     CONF_METRICS_FILTER,
     CONF_METRICS_PREFIX,
@@ -29,19 +29,19 @@ async def async_get_prometheus_metrics(
     session,
     prometheus_url: str,
     job_name: str,
-    instance_label: str,
+    # instance_label: str, # Removed parameter
     instance_value: str,
     metrics_filter: Optional[Dict[str, str]] = None
 ) -> List[Dict[str, Any]]:
     """
     Fetch metrics from Prometheus API.
     This is a simplified placeholder. A more robust implementation is needed.
-    Example query: {job="<job_name>", <instance_label>="<instance_value>", ...<metrics_filter>}
+    Example query: {job="<job_name>", instance="<instance_value>", ...<metrics_filter>}
     """
     # Construct PromQL query
     label_selectors = [
-        f'{CONF_JOB_NAME}="{job_name}"',
-        f'{instance_label}="{instance_value}"'
+        f'job="{job_name}"',
+        f'instance="{instance_value}"' # Hardcoded "instance" as the label key
     ]
     if metrics_filter:
         for key, value in metrics_filter.items():
@@ -115,7 +115,7 @@ class PrometheusDataUpdateCoordinator(DataUpdateCoordinator):
         """Fetch data from Prometheus."""
         _LOGGER.debug("Fetching data for target %s", self.name)
         job_name = self.target_config[CONF_JOB_NAME]
-        instance_label = self.target_config[CONF_INSTANCE_LABEL]
+        # instance_label = self.target_config[CONF_INSTANCE_LABEL] # Removed
         instance_value = self.target_config[CONF_INSTANCE_VALUE]
         metrics_filter = self.target_config.get(CONF_METRICS_FILTER)
         
@@ -134,7 +134,7 @@ class PrometheusDataUpdateCoordinator(DataUpdateCoordinator):
                 self.session,
                 self.prometheus_url,
                 job_name,
-                instance_label,
+                # instance_label, # Removed argument
                 instance_value,
                 metrics_filter,
             )

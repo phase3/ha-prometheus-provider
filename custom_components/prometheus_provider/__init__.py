@@ -21,7 +21,6 @@ from .const import (
     CONF_TARGETS,
     CONF_TARGET_NAME,
     CONF_JOB_NAME,
-    CONF_INSTANCE_LABEL,
     CONF_INSTANCE_VALUE,
     CONF_METRICS_PREFIX,
     CONF_INCLUDED_METRICS,
@@ -45,7 +44,6 @@ TARGET_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_TARGET_NAME): cv.string,
         vol.Required(CONF_JOB_NAME): cv.string,
-        vol.Required(CONF_INSTANCE_LABEL): cv.string,
         vol.Required(CONF_INSTANCE_VALUE): cv.string,
         vol.Required(CONF_DEVICE_ID): cv.slug,
         vol.Required(CONF_DEVICE_NAME): cv.string,
