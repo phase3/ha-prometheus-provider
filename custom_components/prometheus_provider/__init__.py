@@ -10,6 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import discovery
 from homeassistant.const import (
     CONF_NAME,
 )
@@ -121,8 +122,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         # and sensor.py can then iterate hass.data[DOMAIN][DATA_COORDINATORS]
         for platform in PLATFORMS:
             hass.async_create_task(
-                hass.helpers.discovery.async_load_platform(
-                    platform, DOMAIN, {"yaml": True}, config # Pass a marker for YAML
+                discovery.async_load_platform(
+                    hass, platform, DOMAIN, {"yaml": True}, config # Pass a marker for YAML
                 )
             )
 
