@@ -4,7 +4,12 @@ from datetime import timedelta
 import logging
 from typing import Any, Dict, List, Optional
 
-import async_timeout
+try:
+    import async_timeout
+except ImportError:
+    # For newer Home Assistant versions, async_timeout is built-in
+    import asyncio as async_timeout
+
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed

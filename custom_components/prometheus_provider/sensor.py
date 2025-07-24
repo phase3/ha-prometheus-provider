@@ -90,7 +90,10 @@ async def async_setup_platform(
 
     if sensors_to_add:
         _LOGGER.info("Adding %s Prometheus sensors from YAML configuration.", len(sensors_to_add))
-        async_add_entities(sensors_to_add, True) # True for update_before_add
+        if callable(async_add_entities):
+            async_add_entities(sensors_to_add, True) # True for update_before_add
+        else:
+            _LOGGER.error("async_add_entities is not callable - entity addition failed")
     else:
         _LOGGER.info("No Prometheus sensors to add from YAML configuration. Check coordinator data and target setups.")
 

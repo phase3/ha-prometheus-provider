@@ -109,25 +109,52 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     # Forward setup to sensor platform.
     # The sensor platform will retrieve coordinators from hass.data.
     if targets: # Only load platform if there are targets
-        # For YAML, we might need a way for sensor platform to know it's YAML setup.
-        # Storing a flag or using a special key in hass.data might be one way.
-        # Or sensor platform checks if entry is None.
-        # The current sensor.py template expects an entry.
-        # Let's adjust sensor.py later to handle this.
-        # For now, this is a placeholder for how platforms are typically loaded.
-        # A more common pattern for YAML is hass.helpers.discovery.load_platform.
-        # However, with coordinators, it's better if platforms can access them directly.
-
-        # Use discovery.async_load_platform as it's more suited for YAML
-        # and sensor.py can then iterate hass.data[DOMAIN][DATA_COORDINATORS]
+        # Mark that this is YAML setup in hass.data for the sensor platform to detect
+        hass.data[DOMAIN]["yaml_setup"] = True
+        
+        # Load platforms using the most compatible method
         for platform in PLATFORMS:
             hass.async_create_task(
-                discovery.async_load_platform(
-                    hass, platform, DOMAIN, {"yaml": True}, config # Pass a marker for YAML
-                )
+                _async_load_platform(hass, platform, config)
             )
 
     return True
+
+
+async def _async_load_platform(hass: HomeAssistant, platform: str, config: ConfigType) -> None:
+    """Load a platform with error handling for different HA versions."""
+    try:
+        # Try modern discovery method first
+        await discovery.async_load_platform(
+            hass, platform, DOMAIN, {"yaml": True}, config
+        )
+        _LOGGER.debug("Successfully loaded %s platform using discovery", platform)
+    except (AttributeError, ImportError) as err:
+        _LOGGER.debug("Discovery method failed (%s), trying direct platform loading", err)
+        try:
+            # Fallback to direct platform loading
+            if platform == "sensor":
+                from . import sensor
+                
+                # Create a proper async_add_entities function
+                from homeassistant.helpers.entity_platform import async_get_current_platform
+                
+                async def async_add_entities_wrapper(entities, update_before_add=True):
+                    """Add entities using the current platform."""
+                    current_platform = async_get_current_platform()
+                    if current_platform:
+                        await current_platform.async_add_entities(entities, update_before_add)
+                    else:
+                        _LOGGER.error("No current platform available for adding entities")
+                
+                await sensor.async_setup_platform(
+                    hass, config, async_add_entities_wrapper, {"yaml": True}
+                )
+                _LOGGER.debug("Successfully loaded %s platform using direct method", platform)
+        except Exception as fallback_err:
+            _LOGGER.error("Failed to load %s platform: %s", platform, fallback_err)
+    except Exception as err:
+        _LOGGER.error("Unexpected error loading %s platform: %s", platform, err)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

@@ -1,0 +1,8 @@
+{
+  "name": "Prometheus Provider",
+  "content_in_root": false,
+  "render_readme": true,
+  "domains": ["prometheus_provider"],
+  "homeassistant": "2024.1.0",
+  "iot_class": "Local Polling"
+}
